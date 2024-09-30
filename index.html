@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <script src="https://unpkg.com/html5-qrcode/minified/html5-qrcode.min.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login Page</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f2f2f2;
+        }
+        .login-box {
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+        .login-box h2 {
+            margin: 0 0 20px;
+        }
+        input[type="text"], input[type="password"] {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+        button {
+            width: 100%;
+            padding: 10px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        .buttons {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="login-box">
+    <h2>Login</h2>
+    <form id="loginForm" method="POST" action="login.php">
+        <input type="text" id="username" name="username" placeholder="Username" required>
+        <input type="password" id="password" name="password" placeholder="Password" required>
+        <button type="submit">Login</button>
+    </form>
+
+
+    <div id="welcome" style="display: none;">
+        <h2>Welcome, <span id="displayUsername"></span></h2>
+        <div class="buttons">
+            <button id="clockIn">Clock In</button>
+            <button id="clockOut">Clock Out</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.getElementById('loginForm').addEventListener('submit', function(event) {
+        event.preventDefault();
+
+        // Simulate login authentication
+        const username = document.getElementById('username').value;
+        const password = document.getElementById('password').value;
+
+        // Connect to Azure and validate the username and password here
+        // For now, let's assume the login is successful
+
+        // Hide login form and show welcome
+        document.getElementById('loginForm').style.display = 'none';
+        document.getElementById('welcome').style.display = 'block';
+        document.getElementById('displayUsername').innerText = username;
+
+        // Add event listeners for the Clock In and Clock Out buttons
+        document.getElementById('clockIn').addEventListener('click', function() {
+            openCamera('in', username);
+        });
+
+        document.getElementById('clockOut').addEventListener('click', function() {
+            openCamera('out', username);
+        });
+    });
+
+    function openCamera(type, username) {
+        const qrCodeRegion = document.createElement('div');
+        qrCodeRegion.setAttribute('id', 'qr-code-reader');
+        document.body.appendChild(qrCodeRegion);
+
+        const html5QrCode = new Html5Qrcode("qr-code-reader");
+
+        html5QrCode.start(
+            { facingMode: "environment" }, // Rear camera
+            {
+                fps: 10, // Frames per second
+                qrbox: 250 // Size of the scanning box (px)
+            },
+            qrCodeMessage => {
+                alert(`${type === 'in' ? 'Clocking In' : 'Clocking Out'} with QR: ${qrCodeMessage}`);
+
+                // Stop scanning after successful scan
+                html5QrCode.stop().then(() => {
+                    qrCodeRegion.remove(); // Remove QR code scanner from DOM
+
+                    // Save data after QR is scanned
+                    saveToGoogleSheets(username, type, qrCodeMessage);
+                }).catch(err => {
+                    console.log(`Error stopping camera: ${err}`);
+                });
+            },
+            errorMessage => {
+                // Do something when QR code scanning fails
+                console.log(`Error scanning: ${errorMessage}`);
+            }
+        ).catch(err => {
+            console.log(`Error starting camera: ${err}`);
+        });
+    }
+
+    function saveToGoogleSheets(username, type) {
+        const now = new Date();
+        const time = now.toLocaleTimeString();
+        const date = now.toLocaleDateString();
+
+        // Save to Google Sheets using Google Sheets API
+        // Here, we'll simulate it with a console log
+        console.log(`Saving to Google Sheets: Username: ${username}, Time: ${time}, Date: ${date}, Type: ${type}`);
+
+        // You would need to use Google Sheets API to send the data here
+        // Here's an example API call (in real usage):
+        // fetch('https://sheets.googleapis.com/v4/spreadsheets/YOUR_SHEET_ID/values/A1:append', {
+        //     method: 'POST',
+        //     headers: {
+        //         'Authorization': 'Bearer YOUR_ACCESS_TOKEN',
+        //         'Content-Type': 'application/json',
+        //     },
+        //     body: JSON.stringify({
+        //         values: [[username, type === 'in' ? 'Clock In' : 'Clock Out', time, date]]
+        //     })
+        // });
+    }
+</script>
+</body>
+</html>
